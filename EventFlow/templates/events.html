@@ -1,0 +1,27 @@
+
+{% extends "base.html" %}
+{% block heading %}Events{% endblock %}
+{% block content %}
+<div class="page-tools"><form class="search" method="get"><input name="q" value="{{q}}" placeholder="Search events or venues…"><select name="status"><option value="">All statuses</option>{% for s in statuses %}<option {% if status==s %}selected{% endif %}>{{s}}</option>{% endfor %}</select><button class="btn">Filter</button></form><button class="btn primary" data-modal="create-event">+ New event</button></div>
+{% if not events and session.role=='Admin' %}<div class="empty panel" style="margin-bottom:18px"><h3>Your EventFlow is empty</h3><p>Create your real event above. If you need sample data for a presentation, load it manually.</p><form method="post" action="{{url_for('load_demo')}}"><button class="btn">Load demo data</button></form></div>{% endif %}
+<div class="event-grid">
+{% for e in events %}
+<div class="event-card">
+<div class="card-top"><span class="badge {{e.status|lower|replace(' ','-')}}">{{e.status}}</span><span class="muted">{{e.event_date}}</span></div>
+<h2>{{e.name}}</h2><p>{{e.description or 'No description provided.'}}</p>
+<div class="meta">⌖ {{e.venue or 'Venue not set'}}</div>
+<div class="progress-line"><span style="width:{{event_progress(e.id)}}%"></span></div>
+<div class="card-foot"><b>{{event_progress(e.id)}}% complete</b><span class="actions"><a href="{{url_for('event_detail',event_id=e.id)}}" class="btn small">Open</a>{% if session.role=='Admin' %}<button class="btn small" data-modal="edit-event-{{e.id}}">Edit</button><form method="post" action="{{url_for('delete_event',event_id=e.id)}}" data-confirm="Delete this event and all of its tasks, materials, team members and vendors?"><button class="btn small danger">Delete</button></form>{% endif %}</span></div>
+</div>
+{% else %}<div class="empty">No events match your search.</div>{% endfor %}
+</div>
+{% for e in events %}<div class="modal" id="edit-event-{{e.id}}"><div class="modal-card"><button class="close" data-close>×</button><h2>Edit event</h2><form method="post" action="{{url_for('edit_event',event_id=e.id)}}" class="form grid-form"><label>Name<input name="name" value="{{e.name}}" required></label><label>Date<input name="event_date" type="date" value="{{e.event_date}}" required></label><label>Start time<input name="start_time" type="time" value="{{e.start_time}}"></label><label>End time<input name="end_time" type="time" value="{{e.end_time}}"></label><label class="full-span">Venue<input name="venue" value="{{e.venue}}"></label><label>Status<select name="status">{% for st in statuses %}<option {% if e.status==st %}selected{% endif %}>{{st}}</option>{% endfor %}</select></label><label class="full-span">Description<textarea name="description" rows="3">{{e.description}}</textarea></label><div class="full-span actions"><button type="button" class="btn" data-close>Cancel</button><button class="btn primary">Save changes</button></div></form></div></div>{% endfor %}
+<div class="modal" id="create-event"><div class="modal-card"><button class="close" data-close>×</button><h2>Create event</h2><form method="post" action="{{url_for('create_event')}}" class="form grid-form">
+<label>Event name<input name="name" required placeholder="e.g. College Fest 2026"></label><label>Date<input name="event_date" type="date" required></label>
+<label>Start time<input name="start_time" type="time"></label><label>End time<input name="end_time" type="time"></label>
+<label class="full-span">Venue<input name="venue" placeholder="Main Ground"></label>
+<label>Status<select name="status">{% for s in statuses %}<option>{{s}}</option>{% endfor %}</select></label>
+<label class="full-span">Description<textarea name="description" rows="3"></textarea></label>
+<div class="full-span actions"><button class="btn" type="button" data-close>Cancel</button><button class="btn primary">Create event</button></div>
+</form></div></div>
+{% endblock %}

@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}{{ page_title }} · EventFlow{% endblock %}
+{% block heading %}{{ page_title }}{% endblock %}
+{% block content %}
+<div class="welcome-row">
+  <div><p class="muted">{{ page_desc }}</p></div>
+  {% if kind == 'events' and session.role == 'Admin' %}
+    <a class="btn primary" href="{{ url_for('events') }}">Manage events</a>
+  {% endif %}
+</div>
+
+{% if kind in ['team','tasks','materials','vendors'] %}
+<form class="page-tools search" method="get">
+  <input name="q" value="{{ q|default('', true) }}" placeholder="Search {{ kind }}…">
+  {% if kind == 'tasks' %}
+    <select name="status">
+      <option value="">All statuses</option>
+      {% for x in task_statuses|default([]) %}
+        <option value="{{ x }}" {% if status|default('') == x %}selected{% endif %}>{{ x }}</option>
+      {% endfor %}
+    </select>
+    <select name="priority">
+      <option value="">All priorities</option>
+      {% for x in priorities|default([]) %}
+        <option value="{{ x }}" {% if priority|default('') == x %}selected{% endif %}>{{ x }}</option>
+      {% endfor %}
+    </select>
+  {% elif kind == 'materials' %}
+    <select name="status">
+      <option value="">All availability</option>
+      {% for x in ['Available','Shortage','Out of Stock'] %}
+        <option value="{{ x }}" {% if status|default('') == x %}selected{% endif %}>{{ x }}</option>
+      {% endfor %}
+    </select>
+  {% endif %}
+  <button class="btn">Filter</button>
+</form>
+{% endif %}
+
+{% if kind == 'vendors' %}
+<div class="budget-grid">
+  <div class="budget-card"><span>Total estimated</span><strong>Rs. {{ totals.estimated|default(0) }}</strong></div>
+  <div class="budget-card"><span>Total actual</span><strong>Rs. {{ totals.actual|default(0) }}</strong></div>
+  <div class="budget-card"><span>Remaining</span><strong>Rs. {{ (totals.estimated|default(0) - totals.actual|default(0)) }}</strong></div>
+</div>
+{% endif %}
+
+<div class="table-wrap">
+<table>
+<thead>
+{% if kind == 'team' %}
+<tr><th>Member</th><th>Event</th><th>Role</th><th>Contact</th><th>Assigned tasks</th></tr>
+{% elif kind == 'tasks' %}
+<tr><th>Task</th><th>Event</th><th>Assignee</th><th>Due</th><th>Priority</th><th>Status</th></tr>
+{% elif kind == 'materials' %}
+<tr><th>Material</th><th>Event</th><th>Category</th><th>Required</th><th>Available</th><th>Status</th></tr>
+{% elif kind == 'vendors' %}
+<tr><th>Vendor</th><th>Event</th><th>Service</th><th>Estimated</th><th>Actual</th><th>Payment</th></tr>
+{% else %}
+<tr><th>Time</th><th>Event</th><th>Action</th><th>Details</th><th>Actor</th></tr>
+{% endif %}
+</thead>
+<tbody>
+
+{% if kind == 'team' %}
+{% for r in rows %}
+<tr>
+<td><div class="person"><div class="avatar">{{ r.name[0] if r.name else '?' }}</div><b>{{ r.name }}</b></div></td>
+<td><a class="text-link" href="{{ url_for('event_detail', event_id=r.event_id) }}">{{ r.event_name }}</a></td>
+<td>{{ r.role }}</td><td>{{ r.email }}<small>{{ r.phone }}</small></td><td>{{ r.task_count }}</td>
+</tr>
+{% endfor %}
+
+{% elif kind == 'tasks' %}
+{% for r in rows %}
+<tr>
+<td><a class="text-link" href="{{ url_for('event_detail', event_id=r.event_id) }}#tasks">{{ r.title }}</a><small>{{ r.description }}</small></td>
+<td>{{ r.event_name }}</td><td>{{ r.assignee or 'Unassigned' }}</td><td>{{ r.due_date or '—' }}</td>
+<td><span class="priority {{ r.priority|lower }}">{{ r.priority }}</span></td>
+<td><span class="badge {% if r.status == 'Completed' %}completed{% elif r.status == 'In Progress' %}in-progress{% else %}planning{% endif %}">{{ r.status }}</span></td>
+</tr>
+{% endfor %}
+
+{% elif kind == 'materials' %}
+{% for r in rows %}
+<tr>
+<td><b>{{ r.name }}</b><small>{{ r.unit }}</small></td><td>{{ r.event_name }}</td><td>{{ r.category }}</td>
+<td>{{ r.required_qty }}</td><td>{{ r.available_qty }}</td>
+<td><span class="badge {% if material_status(r) == 'Available' %}completed{% elif material_status(r) == 'Shortage' %}planning{% else %}cancelled{% endif %}">{{ material_status(r) }}</span></td>
+</tr>
+{% endfor %}
+
+{% elif kind == 'vendors' %}
+{% for r in rows %}
+<tr>
+<td><b>{{ r.name }}</b><small>{{ r.contact }}</small></td><td>{{ r.event_name }}</td><td>{{ r.service }}</td>
+<td>Rs. {{ r.estimated_cost }}</td><td>Rs. {{ r.actual_cost }}</td><td>{{ r.payment_status }}</td>
+</tr>
+{% endfor %}
+
+{% else %}
+{% for r in rows %}
+<tr>
+<td>{{ r.created_at|string|replace('T',' ') }}</td><td>{{ r.event_name }}</td><td><b>{{ r.message }}</b></td><td>—</td><td>System / user</td>
+</tr>
+{% endfor %}
+{% endif %}
+
+{% if not rows %}
+<tr><td colspan="6"><div class="empty">Nothing to show here.</div></td></tr>
+{% endif %}
+</tbody>
+</table>
+</div>
+{% endblock %}

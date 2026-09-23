@@ -1,0 +1,28 @@
+
+{% extends "base.html" %}
+{% block heading %}Dashboard{% endblock %}
+{% block content %}
+<div class="welcome-row"><div><p class="muted">Here's what's happening across your events.</p></div><a class="btn primary" href="{{url_for('events')}}">+ Manage events</a></div>
+<div class="stat-grid">
+{% for key,label,icon in [('events','Total Events','◫'),('upcoming','Upcoming Events','◷'),('pending','Pending Tasks','✓'),('completed','Completed Tasks','✓'),('low_stock','Low Stock','!')] %}
+<div class="stat-card"><div class="stat-icon">{{icon}}</div><div><span>{{label}}</span><strong>{{stats[key]}}</strong></div></div>
+{% endfor %}
+</div>
+<div class="grid-2">
+<section class="panel">
+<div class="panel-head"><div><h2>Upcoming events</h2><p>Track progress at a glance.</p></div><a href="{{url_for('events')}}" class="text-link">View all →</a></div>
+<div class="event-list">
+{% for e in events %}
+<a class="event-row" href="{{url_for('event_detail',event_id=e.id)}}"><div class="event-dot"></div><div class="grow"><b>{{e.name}}</b><small>{{e.event_date}} · {{e.venue}}</small><div class="progress"><i style="width:{{event_progress(e.id)}}%"></i></div></div><span class="percent">{{event_progress(e.id)}}%</span></a>
+{% else %}<div class="empty">No events yet.</div>{% endfor %}
+</div></section>
+<section class="panel">
+<div class="panel-head"><div><h2>Alerts</h2><p>Items that may need attention.</p></div></div>
+{% if alerts %}<div class="alert-list">{% for a in alerts[:6] %}<div class="alert-item"><span>!</span>{{a}}</div>{% endfor %}</div>{% else %}<div class="empty success-empty">✓ Everything looks good.</div>{% endif %}
+</section>
+</div>
+<section class="panel">
+<div class="panel-head"><div><h2>Recent activity</h2><p>Latest changes across your workspace.</p></div></div>
+<div class="activity-list">{% for a in activities %}<div class="activity"><div class="activity-dot"></div><div><b>{{a.message}}</b><small>{{a.event_name}} · {{a.created_at.replace('T',' ')}}</small></div></div>{% else %}<div class="empty">No activity yet.</div>{% endfor %}</div>
+</section>
+{% endblock %}
